@@ -1,3 +1,6 @@
+CREATE DATABASE IF NOT EXISTS case_challenge;
+USE case_challenge;
+
 CREATE TABLE sales (
   `customer_id` VARCHAR(1),
   `order_date` DATE,
