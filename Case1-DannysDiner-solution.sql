@@ -55,8 +55,8 @@ WHERE r = 1
 ORDER BY t.customer_id);
 
 -- 6. Which item was purchased first by the customer after they became a member?
-DROP VIEW IF EXISTS SOLUTION5;
-CREATE VIEW SOLUTION5 AS
+DROP VIEW IF EXISTS SOLUTION6;
+CREATE VIEW SOLUTION6 AS
 (WITH temp AS(SELECT s.*
 FROM sales AS s, members AS me
 WHERE s.customer_id = me.customer_id and s.order_date > me.join_date)
@@ -70,9 +70,53 @@ ON t.product_id = m.product_id
 WHERE r = 1);
 
 -- 7. Which item was purchased just before the customer became a member?
+DROP VIEW IF EXISTS SOLUTION7;
+CREATE VIEW SOLUTION7 AS
+( SELECT t2.customer_id, t2.product_id, me.product_name
+  FROM 
+  (SELECT *, RANK() OVER(PARTITION BY customer_id ORDER BY order_date DESC) AS r FROM
+  (SELECT s.*
+  FROM sales AS s, members AS m
+  WHERE s.customer_id = m.customer_id AND s.order_date < m.join_date) AS t1) AS t2,
+  menu AS me
+  WHERE r = 1 and t2.product_id = me.product_id
+  ORDER BY t2.customer_id
+);
 
 -- 8. What is the total items and amount spent for each member before they became a member?
+DROP VIEW IF EXISTS SOLUTION8;
+CREATE VIEW SOLUTION8 AS
+( SELECT s.customer_id, count(*) AS total_items, SUM(me.price) AS amount_spent
+	FROM sales AS s
+	INNER JOIN
+	members AS m
+	ON s.customer_id = m.customer_id AND s.order_date < m.join_date
+	LEFT JOIN
+	menu AS me
+	ON s.product_id = me.product_id
+	GROUP BY s.customer_id
+);
 -- 9.  If each $1 spent equates to 10 points and sushi has a 2x points multiplier - how many points would each customer have?
--- 10. In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi - how many points do customer A and B have at the end of January?
+DROP VIEW IF EXISTS SOLUTION9;
+CREATE VIEW SOLUTION9 AS
+( SELECT customer_id, SUM(points) AS total_points
+FROM
+(SELECT s.customer_id, (CASE WHEN me.product_name = 'sushi' THEN price * 2 ELSE price END) AS points
+FROM sales AS s, menu AS me
+WHERE s.product_id = me.product_id) AS t
+GROUP BY customer_id
+);
 
+-- 10. In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi - how many points do customer A and B have at the end of January?
+DROP VIEW IF EXISTS SOLUTION10;
+CREATE VIEW SOLUTION10 AS
+( SELECT customer_id, SUM(points) AS total_points
+	FROM
+	(SELECT s.customer_id,
+	(CASE WHEN datediff(order_date,join_date) < 7 OR me.product_name = 'sushi' THEN price * 2 ELSE price END) AS points
+	FROM sales AS s, menu AS me, members as m
+	WHERE s.product_id = me.product_id AND s.customer_id = m.customer_id AND s.order_date >= m.join_date AND s.order_date < '2021-02-01') AS t
+	GROUP BY customer_id
+	ORDER BY customer_id
+);
 -- Example Query:
