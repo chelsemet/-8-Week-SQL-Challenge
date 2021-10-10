@@ -119,4 +119,43 @@ CREATE VIEW SOLUTION10 AS
 	GROUP BY customer_id
 	ORDER BY customer_id
 );
+
+-- BONUS
+DROP VIEW IF EXISTS BONUS1;
+CREATE VIEW BONUS1 AS
+( SELECT s.customer_id,s.order_date,me.product_name,me.price, (CASE WHEN isnull(join_date) OR order_date < join_date THEN 'N' ELSE 'Y' END) AS `member`
+	FROM sales AS s
+	LEFT JOIN menu AS me
+	ON s.product_id = me.product_id
+	LEFT JOIN members AS m
+	ON s.customer_id = m.customer_id
+);
+
+DROP VIEW IF EXISTS BONUS2;
+CREATE VIEW BONUS2 AS
+( WITH t1 AS (SELECT s.customer_id,s.order_date,me.product_name,me.price, 
+	(CASE WHEN isnull(join_date) OR order_date < join_date THEN 'N' ELSE 'Y' END) AS `member`
+	FROM sales AS s
+	LEFT JOIN menu AS me
+	ON s.product_id = me.product_id
+	LEFT JOIN members AS m
+	ON s.customer_id = m.customer_id)
+    
+    SELECT t1.*, (CASE WHEN t1.`member` = 'Y' THEN RANK() OVER(PARTITION BY customer_id, `member` ORDER BY order_date) END) AS ranking
+    FROM t1
+);
+
+DROP VIEW IF EXISTS BONUS2;
+CREATE VIEW BONUS2 AS
+( WITH t1 AS (SELECT s.customer_id,s.order_date,me.product_name,me.price, 
+	(CASE WHEN isnull(join_date) OR order_date < join_date THEN 'N' ELSE 'Y' END) AS `member`
+	FROM sales AS s
+	LEFT JOIN menu AS me
+	ON s.product_id = me.product_id
+	LEFT JOIN members AS m
+	ON s.customer_id = m.customer_id)
+    
+    SELECT t1.*, (CASE WHEN t1.`member` = 'Y' THEN RANK() OVER(PARTITION BY customer_id, `member` ORDER BY order_date) END) AS ranking
+    FROM t1
+);
 -- Example Query:
